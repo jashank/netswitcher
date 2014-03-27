@@ -1,5 +1,5 @@
-networks
-========
+netswitcher
+===========
 
 Some useful functions that make network location switching easier.
 
