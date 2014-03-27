@@ -106,7 +106,7 @@ __Example usage__:
 	dns_ns=192.168.1.1
 	dns_search=example.com
     . `dirname $0`/functions
-    static_if $1
+    static_bond $1
 
 Creates an interface `bond0` by enslaving `$bond_ifs` in order, then
 configures `$ifname` as a statically-addressed interface.
