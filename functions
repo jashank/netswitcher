@@ -98,30 +98,24 @@ function _resolvconf_down() {
 }
 
 function dhcp_if() {
-    if [ X$2 = X ]
-    then
-	_print_profile "-" "-" "no interface specified in source!"
-	exit 1
-    fi
-
     case "$1" in
 	arrive)
-	    _if_up $2
-	    _dhcpcd_up $2
+	    _if_up $ifname
+	    _dhcpcd_up $ifname
 
 	    if [ X$3 != XQUIET ]
 	    then
-		_advise_up $2
+		_advise_up $ifname
 	    fi
 	    ;;
 	depart)
-	    _dhcpcd_down $2
-	    _resolvconf_down $2
-	    _if_down $2
+	    _dhcpcd_down $ifname
+	    _resolvconf_down $ifname
+	    _if_down $ifname
 
 	    if [ X$3 != XQUIET ]
 	    then
-		_advise_down $2
+		_advise_down $ifname
 	    fi
 	    ;;
     esac
@@ -154,18 +148,18 @@ function static_if() {
 
     case "$1" in
 	arrive)
-	    _if_up $2
-	    _static_up $2 $v4addr $v4mask $v4route
-	    _resolvconf_up $2 $dns_ns $dns_search
+	    _if_up $ifname
+	    _static_up $ifname $v4addr $v4mask $v4route
+	    _resolvconf_up $ifname $dns_ns $dns_search
 
-	    _advise_up $2
+	    _advise_up $ifname
 	    ;;
 	depart)
-	    _resolvconf_down $2
-	    _static_down $2 $v4addr $v4mask $v4route
-	    _if_down $2
+	    _resolvconf_down $ifname
+	    _static_down $ifname $v4addr $v4mask $v4route
+	    _if_down $ifname
 
-	    _advise_down $2
+	    _advise_down $ifname
 	    ;;
     esac
 }
@@ -191,7 +185,7 @@ function static_bond() {
 
 # bluez_if <(arrive|depart)> <AA:BB:CC:DD:EE:FF>
 function bluez_if() {
-    if [ X$2 = X ]
+    if [ X$remote_btaddr = X ]
     then
 	_print_profile "-" "-" "no Bluetooth device specified!"
 	exit 1
@@ -199,14 +193,15 @@ function bluez_if() {
 
     case "$1" in
 	arrive)
-	    _bnep_up bnep0 $2
+	    _bnep_up bnep0 $remote_btaddr
 	    dhcp_if arrive bnep0
 	    ;;
 	depart)
 	    dhcp_if depart bnep0 QUIET
-	    _bnep_down bnep0 $2
+	    _bnep_down bnep0 $remote_btaddr
 
 	    _advise_down bnep0
 	    ;;
     esac
 }
+
