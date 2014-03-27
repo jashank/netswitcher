@@ -34,12 +34,12 @@ function _print_profile() {
 }
 
 function _advise_up() {
-    _print_profile $1 "L" "link up"
+    _print_profile $ifname "L" "link up"
     echo ${profile} > /run/network-location
 }
 
 function _advise_down() {
-    _print_profile $1 "-" "link down"
+    _print_profile $ifname "-" "link down"
     echo '' > /run/network-location
 }
 
@@ -54,17 +54,17 @@ function _if_down() {
 }
 
 function _bond_up() {
-    _print_profile "bond0" "-" "creating bond interface"
-    ifconfig bond0 up
+    _print_profile $1 "-" "creating bond interface"
+    ip link set $1 up
 
-    _print_profile "bond0" "-" "enslaving interfaces"
+    _print_profile $1 "-" "enslaving interfaces"
     # man, screw you, shell quoting
-    eval "ifenslave bond0 $bond_ifs"
+    eval "ifenslave $1 $bond_ifs"
 }
 
 function _bond_down() {
-    _print_profile "bond0" "-" "interface teardown"
-    ifconfig bond0 down
+    _print_profile $1 "-" "interface teardown"
+    ip link set $1 down
 }
 
 function _dhcpcd_up() {
@@ -125,9 +125,9 @@ function dhcp_if() {
 	    _if_up $ifname
 	    _dhcpcd_up $ifname
 
-	    if [ X$3 != XQUIET ]
+	    if [ X$2 != XQUIET ]
 	    then
-		_advise_up $ifname
+		_advise_up
 	    fi
 	    ;;
 	depart)
@@ -135,9 +135,9 @@ function dhcp_if() {
 	    _resolvconf_down $ifname
 	    _if_down $ifname
 
-	    if [ X$3 != XQUIET ]
+	    if [ X$2 != XQUIET ]
 	    then
-		_advise_down $ifname
+		_advise_down
 	    fi
 	    ;;
     esac
@@ -158,7 +158,7 @@ function static_if() {
 
 	    if [ X$2 != XQUIET ]
 	    then
-		_advise_up $ifname
+		_advise_up
 	    fi
 	    ;;
 	depart)
@@ -168,7 +168,7 @@ function static_if() {
 
 	    if [ X$2 != XQUIET ]
 	    then
-		_advise_down $ifname
+		_advise_down
 	    fi
 	    ;;
     esac
@@ -179,7 +179,7 @@ function dhcp_bond() {
 
     case "$1" in
         arrive)
-	    _bond_up
+	    _bond_up $ifname
 
 	    dhcp_if $1 QUIET
             ;;
@@ -187,7 +187,7 @@ function dhcp_bond() {
 	    dhcp_if $1 QUIET
 
 	    _bond_down
-	    _advise_down bond0
+	    _advise_down
             ;;
     esac
 }
@@ -197,7 +197,7 @@ function static_bond() {
 
     case "$1" in
         arrive)
-	    _bond_up
+	    _bond_up $ifname
 
 	    static_if $1 QUIET
             ;;
@@ -205,7 +205,7 @@ function static_bond() {
 	    static_if $1 QUIET
 
 	    _bond_down
-	    _advise_down bond0
+	    _advise_down
             ;;
     esac
 }
@@ -218,16 +218,18 @@ function bluez_if() {
 	exit 1
     fi
 
+    ifname=bnep0
+
     case "$1" in
 	arrive)
-	    _bnep_up bnep0 $remote_btaddr
-	    dhcp_if arrive bnep0
+	    _bnep_up $ifname $remote_btaddr
+	    dhcp_if $1
 	    ;;
 	depart)
-	    dhcp_if depart bnep0 QUIET
-	    _bnep_down bnep0 $remote_btaddr
+	    dhcp_if $1 QUIET
+	    _bnep_down $ifname $remote_btaddr
 
-	    _advise_down bnep0
+	    _advise_down
 	    ;;
     esac
 }
