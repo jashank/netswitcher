@@ -1,0 +1,211 @@
+# -*- shell-script -*-
+
+if [ X$1 = X ]
+then
+    print "[${profile}] usage:" `basename $0` "(arrive|depart)"
+    exit 1
+fi
+
+function _print_profile() {
+    printf "\x1b[32m[%s: %s %s]\x1b[39m %s\n" ${profile} $1 $2 "$3"
+}
+
+function _advise_up() {
+    _print_profile $1 "L" "link up"
+    echo ${profile} > /run/network-location
+}
+
+function _advise_down() {
+    _print_profile $1 "-" "link down"
+    echo '' > /run/network-location
+}
+
+function _if_up() {
+    _print_profile $1 "-" "bringing up interface"
+    ip link set $1 up
+}
+
+function _if_down() {
+    _print_profile $1 "-" "tearing down interface"
+    ip link set $1 down
+}
+
+function _bond_up() {
+    _print_profile "bond0" "-" "creating bond interface"
+    ifconfig bond0 up
+
+    _print_profile "bond0" "-" "enslaving interfaces"
+    # man, screw you, shell quoting
+    eval "ifenslave bond0 $bond_ifs"
+}
+
+function _bond_down() {
+    _print_profile "bond0" "-" "interface teardown"
+    ifconfig bond0 down
+}
+
+function _dhcpcd_up() {
+    _print_profile $1 "l" "launching DHCP client daemon"
+    dhcpcd $1
+}
+
+function _dhcpcd_down() {
+    _print_profile $1 "L" "terminating DHCP client daemon"
+    kill -9 `cat /run/dhcpcd-$1.pid`
+}
+
+function _firewall_up() {
+}
+
+function _firewall_down() {
+}
+
+function _bnep_up() {
+    _print_profile $1 "-" "poking bluez via dbus"
+    dbus-send --system --type=method_call --dest=org.bluez \
+	/org/bluez/hci0/dev_`echo $2 | sed -e "s/:/_/g"` \
+	org.bluez.Network1.Connect string:'nap'
+}
+
+function _bnep_down() {
+    _print_profile $1 "-" "poking bluez via dbus"
+    dbus-send --system --type=method_call --dest=org.bluez \
+	/org/bluez/hci0/dev_`echo $2 | sed -e "s/:/_/g"` \
+	org.bluez.Network1.Disconnect
+}
+
+function _static_up() {
+    _print_profile $1 "l" "addressing and routing interface"
+    ip addr add $2/$3 dev $1
+    ip route add default via $4 dev $1
+}
+
+function _static_down() {
+    _print_profile $1 "l" "unrouting and unaddressing interface"
+    ip route delete default via $4 dev $1
+    ip addr delete $2/$3 dev $1
+}
+
+function _resolvconf_up() {
+    _print_profile $1 "l" "configuring DNS resolution"
+    (echo "nameserver $2"; echo "search $3") | resolvconf -a $1    
+}
+
+function _resolvconf_down() {
+    _print_profile $1 "l" "cleaning up DNS resolution"
+    resolvconf -d $1
+}
+
+function dhcp_if() {
+    if [ X$2 = X ]
+    then
+	_print_profile "-" "-" "no interface specified in source!"
+	exit 1
+    fi
+
+    case "$1" in
+	arrive)
+	    _if_up $2
+	    _dhcpcd_up $2
+
+	    if [ X$3 != XQUIET ]
+	    then
+		_advise_up $2
+	    fi
+	    ;;
+	depart)
+	    _dhcpcd_down $2
+	    _resolvconf_down $2
+	    _if_down $2
+
+	    if [ X$3 != XQUIET ]
+	    then
+		_advise_down $2
+	    fi
+	    ;;
+    esac
+}
+
+function dhcp_bond() {
+    case "$1" in
+	arrive)
+	    _bond_up
+	    _dhcpcd_up bond0
+
+	    _advise_up bond0
+	    ;;
+	depart)
+	    _dhcpcd_down bond0
+	    _resolvconf_down bond0
+	    _bond_down
+
+	    _advise_down bond0
+	    ;;
+    esac
+}
+
+function static_if() {
+    if [ X$2 = X ]
+    then
+	_print_profile "-" "-" "no interface specified in source!"
+	exit 1
+    fi
+
+    case "$1" in
+	arrive)
+	    _if_up $2
+	    _static_up $2 $v4addr $v4mask $v4route
+	    _resolvconf_up $2 $dns_ns $dns_search
+
+	    _advise_up $2
+	    ;;
+	depart)
+	    _resolvconf_down $2
+	    _static_down $2 $v4addr $v4mask $v4route
+	    _if_down $2
+
+	    _advise_down $2
+	    ;;
+    esac
+}
+
+function static_bond() {
+    case "$1" in
+        arrive)
+	    _bond_up
+	    _static_up bond0 $v4addr $v4mask $v4route
+	    _resolvconf_up bond0 $dns_ns $dns_search
+
+	    _advise_up bond0
+            ;;
+        depart)
+	    _resolvconf_down bond0
+	    _static_down bond0 $v4addr $v4mask $v4route
+	    _bond_down
+
+	    _advise_down bond0
+            ;;
+    esac
+}
+
+# bluez_if <(arrive|depart)> <AA:BB:CC:DD:EE:FF>
+function bluez_if() {
+    if [ X$2 = X ]
+    then
+	_print_profile "-" "-" "no Bluetooth device specified!"
+	exit 1
+    fi
+
+    case "$1" in
+	arrive)
+	    _bnep_up bnep0 $2
+	    dhcp_if arrive bnep0
+	    ;;
+	depart)
+	    dhcp_if depart bnep0 QUIET
+	    _bnep_down bnep0 $2
+
+	    _advise_down bnep0
+	    ;;
+    esac
+}
