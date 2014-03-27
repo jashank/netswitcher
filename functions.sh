@@ -29,6 +29,10 @@ then
     exit 1
 fi
 
+function _print_profile_nonl() {
+    printf "\x1b[32m[%s: %s %s]\x1b[39m %s" ${profile} $1 $2 "$3"
+}
+
 function _print_profile() {
     printf "\x1b[32m[%s: %s %s]\x1b[39m %s\n" ${profile} $1 $2 "$3"
 }
@@ -223,6 +227,15 @@ function bluez_if() {
     case "$1" in
 	arrive)
 	    _bnep_up $ifname $remote_btaddr
+
+	    _print_profile_nonl $ifname "+" "waiting for link to come up... "
+	    until ip link show $ifname >/dev/null 2>&1
+	    do
+		sleep 1
+		echo -n '.'
+	    done
+	    echo " ok"
+
 	    dhcp_if $1
 	    ;;
 	depart)
