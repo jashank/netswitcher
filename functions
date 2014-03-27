@@ -1,3 +1,4 @@
+# netswitcher -- network location switcher
 # -*- shell-script -*-
 
 if [ X$1 = X ]
@@ -63,14 +64,14 @@ function _firewall_down() {
 function _bnep_up() {
     _print_profile $1 "-" "poking bluez via dbus"
     dbus-send --system --type=method_call --dest=org.bluez \
-	/org/bluez/hci0/dev_`echo $2 | sed -e "s/:/_/g"` \
+	/org/bluez/hci0/dev_`echo $remote_btaddr | sed -e "s/:/_/g"` \
 	org.bluez.Network1.Connect string:'nap'
 }
 
 function _bnep_down() {
     _print_profile $1 "-" "poking bluez via dbus"
     dbus-send --system --type=method_call --dest=org.bluez \
-	/org/bluez/hci0/dev_`echo $2 | sed -e "s/:/_/g"` \
+	/org/bluez/hci0/dev_`echo $remote_btaddr | sed -e "s/:/_/g"` \
 	org.bluez.Network1.Disconnect
 }
 
