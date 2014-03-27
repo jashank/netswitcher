@@ -3,19 +3,34 @@ networks
 
 Some useful functions that make network location switching easier.
 
+This isn't guaranteed to work everywhere.  It may cause your computer
+to catch fire, eat your pets or destroy your marriage.
+
+Known to work:
+
+ - Arch (requires `zsh iproute2`; optionally `dhcpcd ifenslave dbus
+   bluez bluez-utils`)
+
 Usage
 -----
 
 Network profiles are simply shell scripts that source the `functions`
 file at the right time, and specify what family of interfaces they
-use.  To call one, run, as root (either by running a root shell, or by
-using sudo):
+use.  All profiles offer two functions: _arrive_ and _depart_, which
+should be called when you arrive at, or depart from, a certain
+location.
+
+To call one, run, as root (either by running a root shell, or by using
+sudo):
 
     # zsh /path/to/netswitcher/example-profile arrive
 
 or
 
     # zsh /path/to/netswitcher/example-profile depart
+
+The name of the currently active profile can be found in
+`/run/network-location`.
 
 Writing Profiles
 ----------------
@@ -34,6 +49,9 @@ The simplest profile looks like:
 This defines a profile called 'example.com', on a system with one
 network interface, `enp0s25`.  Its profile class is `dhcp_if`, which
 automatically configures DHCP on an interface.
+
+Convention is that a profile's filename should be the same as
+`$profile`.
 
 Each profile class expects some environment variables to be set, and
 may fail in odd ways if they are not.  All profile classes depend on
@@ -163,10 +181,35 @@ Future Features
 
 ### Long-Term ###
 
- - migrate to plain POSIX shell
+ - migrate to plain POSIX sh(1)
  - remove as much dependence on Linuxisms as possible
  - remove dependence on dhcpcd
  - write a bluez4-compatible bluez_if
  - remove the ugly profile class call
+ - wrapper script that manages file locations
  - i18n
 
+
+License
+-------
+
+Copyright (c) 2014 Jashank Jeremy.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
