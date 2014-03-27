@@ -6,11 +6,6 @@ Some useful functions that make network location switching easier.
 This isn't guaranteed to work everywhere.  It may cause your computer
 to catch fire, eat your pets or destroy your marriage.
 
-Known to work:
-
- - Arch (requires `zsh iproute2`; optionally `dhcpcd ifenslave dbus
-   bluez bluez-utils`)
-
 Usage
 -----
 
@@ -31,6 +26,75 @@ or
 
 The name of the currently active profile can be found in
 `/run/network-location`.
+
+System Requirements
+-------------------
+
+ - `zsh` (this may change)
+ - `iproute2`
+
+Optionally,
+
+ - `ifenslave`
+ - `dhcpcd`
+ - `dbus`
+ - `bluez`
+ - `bluez-utils`
+ - `wpa_supplicant`
+
+Known to work:
+
+ - Arch (tested _every day_ in the real world)
+
+Should work:
+
+ - Fedora
+
+May work someday:
+
+ - FreeBSD (?!)
+ - illumos
+
+Why?
+----
+
+I spent three years dragging a Mac around with me.  If there's one
+thing from OS X (well, Darwin, actually) I could have and nothing
+else, it's the SystemConfiguration framework (`scutil`, `scselect`),
+which is the functionality behind network "Locations" on OS X.
+
+I also needed some other features from _scselect_, so I wound up
+writing a wrapper around it, called _scselects_, which did network
+location switching and updated some files that control Darwin
+behaviours.
+
+On Linux, there's nothing that does the job.  NetworkManager should,
+in theory, do the trick, but it's terrible at doing this.  `netctl`, a
+more natural choice considering I use Arch, is even worse and has
+especially shaky support for link aggregation.
+
+So I bit the bullet and wrote this bag of shell scripty goodness.
+
+The philosophical objectives are:
+
+ - I'm a sysadmin, so I know how to do this by hand, but I'm lazy,
+   therefore I do not.  Use a format that other sysadmins ran read,
+   understand and hack to do what they want, not what _I_ want nor
+   what I think they want.
+   
+ - If it breaks, it should not break everything.  NetworkManager is
+   especially guilty of this, in my experience.
+   
+ - Simple, fast, debuggable, light.  Don't use extraneous tools when
+   they're not needed (Bluetooth `bnep` support violates this because
+   bluez is braindead).  _netctl_ embodies this.
+
+ - Do not change persistent system state, so a reboot can undo damage.
+   _Never_ write to system configuration files.  Fedora's netconfig is
+   especially guilty of this, in my experience.
+
+Many of these should be self-evident through the following examples
+and by reading the source.
 
 Writing Profiles
 ----------------
@@ -177,6 +241,7 @@ Future Features
 
  - multiple DNS servers,
  - multiple DNS search domains,
+ - firewalling with firewalld,
  - IPv6 (testers wanted!)
 
 ### Long-Term ###
@@ -188,7 +253,6 @@ Future Features
  - remove the ugly profile class call
  - wrapper script that manages file locations
  - i18n
-
 
 License
 -------
