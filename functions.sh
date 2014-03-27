@@ -181,12 +181,12 @@ function dhcp_bond() {
         arrive)
 	    _bond_up $ifname
 
-	    dhcp_if $1 QUIET
+	    dhcp_if $1
             ;;
         depart)
 	    dhcp_if $1 QUIET
 
-	    _bond_down
+	    _bond_down $ifname
 	    _advise_down
             ;;
     esac
@@ -199,12 +199,12 @@ function static_bond() {
         arrive)
 	    _bond_up $ifname
 
-	    static_if $1 QUIET
+	    static_if $1
             ;;
         depart)
 	    static_if $1 QUIET
 
-	    _bond_down
+	    _bond_down $ifname
 	    _advise_down
             ;;
     esac
