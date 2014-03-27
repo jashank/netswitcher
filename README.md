@@ -44,7 +44,7 @@ Optionally,
 
 Known to work:
 
- - Arch (tested _every day_ in the real world)
+ - Arch (tested daily in the real world)
 
 Should work:
 
