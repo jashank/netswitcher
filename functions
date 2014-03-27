@@ -121,24 +121,6 @@ function dhcp_if() {
     esac
 }
 
-function dhcp_bond() {
-    case "$1" in
-	arrive)
-	    _bond_up
-	    _dhcpcd_up bond0
-
-	    _advise_up bond0
-	    ;;
-	depart)
-	    _dhcpcd_down bond0
-	    _resolvconf_down bond0
-	    _bond_down
-
-	    _advise_down bond0
-	    ;;
-    esac
-}
-
 function static_if() {
     if [ X$2 = X ]
     then
@@ -152,32 +134,56 @@ function static_if() {
 	    _static_up $ifname $v4addr $v4mask $v4route
 	    _resolvconf_up $ifname $dns_ns $dns_search
 
-	    _advise_up $ifname
+	    if [ X$2 != XQUIET ]
+	    then
+		_advise_up $ifname
+	    fi
 	    ;;
 	depart)
 	    _resolvconf_down $ifname
 	    _static_down $ifname $v4addr $v4mask $v4route
 	    _if_down $ifname
 
-	    _advise_down $ifname
+	    if [ X$2 != XQUIET ]
+	    then
+		_advise_down $ifname
+	    fi
 	    ;;
     esac
 }
 
-function static_bond() {
+function dhcp_bond() {
+    ifname=bond0
+
     case "$1" in
         arrive)
 	    _bond_up
-	    _static_up bond0 $v4addr $v4mask $v4route
-	    _resolvconf_up bond0 $dns_ns $dns_search
 
-	    _advise_up bond0
+	    dhcp_if $1 QUIET
             ;;
         depart)
-	    _resolvconf_down bond0
-	    _static_down bond0 $v4addr $v4mask $v4route
-	    _bond_down
+	    dhcp_if $1 QUIET
 
+	    _bond_down
+	    _advise_down bond0
+            ;;
+    esac
+}
+
+
+function static_bond() {
+    ifname=bond0
+
+    case "$1" in
+        arrive)
+	    _bond_up
+
+	    static_if $1 QUIET
+            ;;
+        depart)
+	    static_if $1 QUIET
+
+	    _bond_down
 	    _advise_down bond0
             ;;
     esac
