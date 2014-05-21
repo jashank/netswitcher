@@ -48,7 +48,7 @@ function _advise_down() {
 }
 
 function _if_up() {
-    _print_profile $1 "-" "bringing up interface"
+    _print_profile $1 "+" "bringing up interface"
     ip link set $1 up
 }
 
@@ -148,7 +148,7 @@ function dhcp_if() {
 }
 
 function static_if() {
-    if [ X$2 = X ]
+    if [ X$ifname = X ]
     then
 	_print_profile "-" "-" "no interface specified in source!"
 	exit 1
@@ -228,7 +228,7 @@ function bluez_if() {
 	arrive)
 	    _bnep_up $ifname $remote_btaddr
 
-	    _print_profile_nonl $ifname "+" "waiting for link to come up... "
+	    _print_profile_nonl $ifname "-" "waiting for link to come up... "
 	    until ip link show $ifname >/dev/null 2>&1
 	    do
 		sleep 1
